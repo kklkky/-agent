@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文生成Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+        
+        .title-icon {
+            width: 24px;
+            height: 24px;
+            color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .input-field, .select-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .input-field:focus, .select-field:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .section-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .section-tag {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .section-tag:hover {
+            border-color: #667eea;
+        }
+        
+        .section-tag.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+        
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .range-field {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .range-value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 500;
+            color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-icon {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        .empty-hint {
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .status-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 12px;
+        }
+        
+        .status-card.processing {
+            background: #e3f2fd;
+        }
+        
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            color: #667eea;
+        }
+        
+        .status-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #bbdefb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .download-btn {
+            flex: none;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .download-btn:hover {
+            background: #45a049;
+        }
+        
+        .paper-content {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .paper-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        
+        .paper-field {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .paper-section {
+            margin-bottom: 24px;
+        }
+        
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 8px;
+        }
+        
+        .section-content {
+            line-height: 1.8;
+            color: #444;
+            padding-left: 8px;
+            white-space: pre-wrap;
+        }
+        
+        .context-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #2e7d32;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                <h1>论文生成Agent</h1>
+            </div>
+            <p class="subtitle">基于RAG技术的领域论文智能生成系统</p>
+        </header>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel">
+                    <h2 class="panel-title">
+                        <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        生成论文
+                    </h2>
+                    
+                    <div class="form-group">
+                        <label>论文主题</label>
+                        <input type="text" id="topic" class="input-field" placeholder="请输入论文主题，例如：深度学习在图像识别中的应用">
+                    </div>
+
+                    <div class="form-group">
+                        <label>研究领域</label>
+                        <select id="field" class="select-field">
+                            <option value="计算机科学">计算机科学</option>
+                            <option value="人工智能">人工智能</option>
+                            <option value="生物学">生物学</option>
+                            <option value="物理学">物理学</option>
+                            <option value="化学">化学</option>
+                            <option value="医学">医学</option>
+                            <option value="经济学">经济学</option>
+                            <option value="心理学">心理学</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>选择章节</label>
+                        <div class="section-grid">
+                            <button class="section-tag selected" data-section="摘要">摘要</button>
+                            <button class="section-tag selected" data-section="引言">引言</button>
+                            <button class="section-tag selected" data-section="方法">方法</button>
+                            <button class="section-tag selected" data-section="结果">结果</button>
+                            <button class="section-tag selected" data-section="讨论">讨论</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>生成长度</label>
+                        <div class="range-container">
+                            <input type="range" id="maxTokens" class="range-field" min="1000" max="8000" step="500" value="3000">
+                            <span class="range-value" id="tokenValue">3000</span>
+                        </div>
+                    </div>
+
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                    <div class="button-group">
+                        <button id="generateBtn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            生成论文
+                        </button>
+                        
+                        <button id="resetBtn" class="btn btn-secondary">
+                            重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel">
+                    <div class="result-header">
+                        <h2 class="panel-title">
+                            <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            生成结果
+                        </h2>
+                        <button id="downloadBtn" class="download-btn" style="display: none;">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            下载
+                        </button>
+                    </div>
+
+                    <div id="emptyState" class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <p>输入主题并点击生成按钮开始</p>
+                        <p class="empty-hint">系统将基于RAG检索相关文献并生成论文</p>
+                    </div>
+
+                    <div id="statusCard" class="status-card" style="display: none;">
+                        <svg class="status-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <p id="statusText" class="status-text">正在生成...</p>
+                            <div class="progress-bar">
+                                <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="paperContent" class="paper-content" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let currentTaskId = null;
+        let pollInterval = null;
+        let currentPaper = null;
+        
+        // DOM elements
+        const topicInput = document.getElementById('topic');
+        const fieldSelect = document.getElementById('field');
+        const maxTokensRange = document.getElementById('maxTokens');
+        const tokenValue = document.getElementById('tokenValue');
+        const generateBtn = document.getElementById('generateBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const emptyState = document.getElementById('emptyState');
+        const statusCard = document.getElementById('statusCard');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const paperContent = document.getElementById('paperContent');
+        const sectionTags = document.querySelectorAll('.section-tag');
+
+        // Token slider
+        maxTokensRange.addEventListener('input', () => {
+            tokenValue.textContent = maxTokensRange.value;
+        });
+
+        // Section tags toggle
+        sectionTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+            });
+        });
+
+        // Get selected sections
+        function getSelectedSections() {
+            return Array.from(sectionTags)
+                .filter(tag => tag.classList.contains('selected'))
+                .map(tag => tag.dataset.section);
+        }
+
+        // Show error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // Hide error
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        // Generate paper
+        async function generatePaper() {
+            const topic = topicInput.value.trim();
+            const field = fieldSelect.value;
+            const sections = getSelectedSections();
+            const maxTokens = parseInt(maxTokensRange.value);
+
+            hideError();
+
+            if (!topic) {
+                showError('请输入论文主题');
+                return;
+            }
+
+            if (sections.length === 0) {
+                showError('请至少选择一个章节');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = `
+                <svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                生成中...
+            `;
+
+            emptyState.style.display = 'none';
+            paperContent.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            statusCard.style.display = 'flex';
+            statusText.textContent = '正在提交任务...';
+            progressFill.style.width = '10%';
+
+            try {
+                const response = await fetch(`${API_BASE}/generate-paper`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, field, sections, max_tokens: maxTokens })
+                });
+
+                const data = await response.json();
+                currentTaskId = data.task_id;
+                
+                statusText.textContent = '正在生成论文...';
+                progressFill.style.width = '30%';
+
+                pollTaskStatus();
+            } catch (error) {
+                showError('提交失败，请检查后端服务是否启动');
+                resetUI();
+            }
+        }
+
+        // Poll task status
+        async function pollTaskStatus() {
+            if (!currentTaskId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/task-status/${currentTaskId}`);
+                const data = await response.json();
+
+                if (data.status === 'completed') {
+                    currentPaper = data.result;
+                    displayPaper(data.result);
+                    stopPolling();
+                } else if (data.status === 'failed') {
+                    showError(data.error || '生成失败');
+                    stopPolling();
+                    resetUI();
+                } else if (data.status === 'processing') {
+                    const progress = data.result?.progress || 50;
+                    statusText.textContent = `正在生成第 ${Math.ceil(progress / 20)}/${sections.length} 章...`;
+                    progressFill.style.width = `${progress}%`;
+                }
+            } catch (error) {
+                console.error('轮询失败:', error);
+            }
+        }
+
+        // Stop polling
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                生成论文
+            `;
+        }
+
+        // Display paper
+        function displayPaper(result) {
+            statusCard.style.display = 'none';
+            paperContent.style.display = 'block';
+            downloadBtn.style.display = 'flex';
+
+            let html = `
+                <h3 class="paper-title">${result.topic}</h3>
+                <p class="paper-field">领域：${result.field}</p>
+            `;
+
+            for (const [section, content] of Object.entries(result.content)) {
+                html += `
+                    <div class="paper-section">
+                        <h4 class="section-header">${section}</h4>
+                        <div class="section-content">${content}</div>
+                    </div>
+                `;
+            }
+
+            if (result.context_used) {
+                html += `
+                    <div class="context-badge">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        已基于知识库内容生成
+                    </div>
+                `;
+            }
+
+            paperContent.innerHTML = html;
+        }
+
+        // Download paper
+        function downloadPaper() {
+            if (!currentPaper) return;
+
+            let content = `# ${currentPaper.topic}\n\n`;
+            content += `**领域**: ${currentPaper.field}\n\n`;
+            
+            for (const [section, text] of Object.entries(currentPaper.content)) {
+                content += `## ${section}\n\n${text}\n\n`;
+            }
+            
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentPaper.topic}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Reset UI
+        function resetUI() {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                生成论文
+            `;
+            statusCard.style.display = 'none';
+            emptyState.style.display = 'block';
+            paperContent.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            currentTaskId = null;
+            currentPaper = null;
+            stopPolling();
+        }
+
+        // Reset form
+        function resetForm() {
+            topicInput.value = '';
+            fieldSelect.value = '计算机科学';
+            maxTokensRange.value = 3000;
+            tokenValue.textContent = '3000';
+            sectionTags.forEach(tag => tag.classList.add('selected'));
+            hideError();
+            resetUI();
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', generatePaper);
+        resetBtn.addEventListener('click', resetForm);
+        downloadBtn.addEventListener('click', downloadPaper);
+
+        // Start polling
+        function startPolling() {
+            pollInterval = setInterval(pollTaskStatus, 2000);
+        }
+
+        // Initialize
+        startPolling();
+    </script>
+</body>
+</html>
